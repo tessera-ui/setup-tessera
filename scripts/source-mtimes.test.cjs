@@ -31,6 +31,7 @@ test('unchanged checkout reuses Cargo artifacts; changed bytes still rebuild', (
       .trim().split('\n').map(line => JSON.parse(line))
       .find(message => message.reason === 'compiler-artifact' && message.target.name === 'cache-fixture');
     assert.equal(build().fresh, false);
+
     const originalMtime = fs.statSync(source).mtimeMs;
 
     // Reproduce checkout on a new runner without changing source bytes.
@@ -59,6 +60,11 @@ test('unchanged checkout reuses Cargo artifacts; changed bytes still rebuild', (
     restoreSourceMtimes(root, 'target');
     assert.ok(Math.abs(fs.statSync(path.join(root, 'templates')).mtimeMs - newer.getTime()) < 1);
     assert.equal(build().fresh, false);
+
+    fs.writeFileSync(path.join(root, 'templates/added.txt'), 'edited\n');
+    fs.utimesSync(path.join(root, 'templates'), newer, newer);
+    restoreSourceMtimes(root, 'target');
+    assert.ok(Math.abs(fs.statSync(path.join(root, 'templates')).mtimeMs - newer.getTime()) < 1);
 
     // Same-length edits must not inherit the cached timestamp or stale executable.
     fs.writeFileSync(source, 'fn main() { println!("after!"); }\n');

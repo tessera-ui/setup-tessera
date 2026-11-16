@@ -38,9 +38,12 @@ function sourceMtimes(root, target, restore) {
       const stat = fs.lstatSync(path.join(root, child));
       return [name, stat.isDirectory() ? 'directory' : 'file', current[child]?.hash ?? directoryState[child]?.hash ?? null];
     });
-    const hash = createHash('sha256').update(JSON.stringify(entries)).digest('hex');
+    // Untracked or special entries have no verified content snapshot; never mask their changes.
+    const hash = entries.some(entry => entry[2] === null)
+      ? null
+      : createHash('sha256').update(JSON.stringify(entries)).digest('hex');
     const stat = fs.statSync(source);
-    if (restore && previous.directories?.[directory]?.hash === hash) {
+    if (restore && hash !== null && previous.directories?.[directory]?.hash === hash) {
       fs.utimesSync(source, stat.atimeMs / 1000, previous.directories[directory].mtime / 1000);
     }
     directoryState[directory] = { hash, mtime: fs.statSync(source).mtimeMs };
