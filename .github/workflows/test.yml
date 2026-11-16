@@ -16,6 +16,9 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+      - name: Test Cargo source timestamp restoration
+        shell: bash
+        run: node --test scripts/source-mtimes.test.cjs
       - uses: ./
       - name: Verify installed toolchain
         shell: bash
