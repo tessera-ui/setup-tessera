@@ -21,21 +21,28 @@ test('unchanged checkout reuses Cargo artifacts; changed bytes still rebuild', (
     fs.writeFileSync(path.join(root, 'Cargo.toml'), '[package]\nname = "cache-fixture"\nversion = "0.1.0"\nedition = "2021"\n');
     const source = path.join(root, 'src/main.rs');
     fs.writeFileSync(source, 'fn main() { println!("before"); }\n');
+    fs.mkdirSync(path.join(root, 'templates'));
+    fs.writeFileSync(path.join(root, 'templates/template.txt'), 'template\n');
+    fs.writeFileSync(path.join(root, 'build.rs'), 'fn main() { println!("cargo:rerun-if-changed=templates"); }\n');
     run('git', ['init', '--quiet']);
-    run('git', ['add', 'Cargo.toml', 'src/main.rs', '.cargo/config.toml']);
+    run('git', ['add', 'Cargo.toml', 'src/main.rs', '.cargo/config.toml', 'build.rs', 'templates']);
     restoreSourceMtimes(root, 'target');
     const build = () => run('cargo', ['build', '--offline', '--message-format=json'])
       .trim().split('\n').map(line => JSON.parse(line))
-      .find(message => message.reason === 'compiler-artifact');
+      .find(message => message.reason === 'compiler-artifact' && message.target.name === 'cache-fixture');
     assert.equal(build().fresh, false);
     const originalMtime = fs.statSync(source).mtimeMs;
 
     // Reproduce checkout on a new runner without changing source bytes.
     const newer = new Date(Date.now() + 2000);
-    fs.utimesSync(source, newer, newer);
+    for (const file of ['src/main.rs', 'templates/template.txt', 'templates']) {
+      fs.utimesSync(path.join(root, file), newer, newer);
+    }
     restoreSourceMtimes(root, 'target');
     assert.ok(Math.abs(fs.statSync(source).mtimeMs - originalMtime) < 1);
-    assert.equal(build().fresh, true);
+    const freshBuild = run('cargo', ['build', '--offline', '--message-format=json']);
+    assert.ok(freshBuild.trim().split('\n').map(line => JSON.parse(line))
+      .filter(message => message.reason === 'compiler-artifact').every(message => message.fresh));
     const alias = spawnSync('cargo', ['--verbose', 'tessera', '--help'], {
       cwd: root,
       encoding: 'utf8',
@@ -45,6 +52,13 @@ test('unchanged checkout reuses Cargo artifacts; changed bytes still rebuild', (
     assert.match(alias.stderr, /Fresh cache-fixture/);
     assert.doesNotMatch(alias.stderr, /Compiling cache-fixture/);
     assert.equal(alias.stdout.trim(), 'before');
+
+    // Adding an untracked directory entry must invalidate a directory-watching build script.
+    fs.writeFileSync(path.join(root, 'templates/added.txt'), 'added\n');
+    fs.utimesSync(path.join(root, 'templates'), newer, newer);
+    restoreSourceMtimes(root, 'target');
+    assert.ok(Math.abs(fs.statSync(path.join(root, 'templates')).mtimeMs - newer.getTime()) < 1);
+    assert.equal(build().fresh, false);
 
     // Same-length edits must not inherit the cached timestamp or stale executable.
     fs.writeFileSync(source, 'fn main() { println!("after!"); }\n');

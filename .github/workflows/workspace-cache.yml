@@ -58,7 +58,15 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p probe-logs
+          if [[ -f "$RUNNER_TEMP/setup-tessera-build.jsonl" ]]; then
+            cp "$RUNNER_TEMP/setup-tessera-build.jsonl" probe-logs/setup.jsonl
+            built=$(jq -s '[.[] | select(.reason == "compiler-artifact" and .fresh == false)] | length' probe-logs/setup.jsonl)
+            echo "setup: compiled=$built" | tee -a "$GITHUB_STEP_SUMMARY"
+            if [[ "$EXPECT_FRESH" == true ]]; then test "$built" -eq 0; fi
+          fi
           git diff --exit-code -- .cargo/config.toml
+          test -d "$HOME/.cargo/.tessera-mobile/templates/platforms"
+          test -d "$HOME/.cargo/.tessera-mobile/templates/apps"
           for pass in first second; do
             cargo --verbose tessera --help 2>&1 | tee "probe-logs/$pass.log"
             count=$(grep -cE '^ *Compiling ' "probe-logs/$pass.log" || true)

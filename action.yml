@@ -166,8 +166,9 @@ runs:
         path: |
           ~/.cargo/registry
           ~/.cargo/git
+          ~/.cargo/.tessera-mobile
           ${{ inputs.target-directory }}
-        key: tessera-cargo-v2-${{ steps.resolve.outputs.cache_key }}-${{ runner.os }}-${{ runner.arch }}-${{ github.job }}-${{ steps.rust.outputs.cachekey }}-${{ steps.resolve.outputs.build_environment }}-${{ steps.resolve.outputs.platforms_key }}-${{ steps.resolve.outputs.target_key }}-${{ hashFiles('**/Cargo.lock', '**/Cargo.toml', '.cargo/config.toml', 'rust-toolchain', 'rust-toolchain.toml') }}-${{ steps.resolve.outputs.key }}
+        key: tessera-cargo-v2-${{ steps.resolve.outputs.cache_key }}-${{ runner.os }}-${{ runner.arch }}-${{ github.job }}-${{ steps.rust.outputs.cachekey }}-${{ steps.resolve.outputs.build_environment }}-${{ steps.resolve.outputs.platforms_key }}-${{ steps.resolve.outputs.target_key }}-${{ hashFiles('**/Cargo.lock', '**/Cargo.toml', '.cargo/config.toml', 'rust-toolchain', 'rust-toolchain.toml') }}-${{ steps.resolve.outputs.key }}-sources-v2
         restore-keys: |
           tessera-cargo-v2-${{ steps.resolve.outputs.cache_key }}-${{ runner.os }}-${{ runner.arch }}-${{ github.job }}-${{ steps.rust.outputs.cachekey }}-${{ steps.resolve.outputs.build_environment }}-${{ steps.resolve.outputs.platforms_key }}-${{ steps.resolve.outputs.target_key }}-${{ hashFiles('**/Cargo.lock', '**/Cargo.toml', '.cargo/config.toml', 'rust-toolchain', 'rust-toolchain.toml') }}-
           tessera-cargo-v2-${{ steps.resolve.outputs.cache_key }}-${{ runner.os }}-${{ runner.arch }}-${{ github.job }}-${{ steps.rust.outputs.cachekey }}-${{ steps.resolve.outputs.build_environment }}-${{ steps.resolve.outputs.platforms_key }}-${{ steps.resolve.outputs.target_key }}-
@@ -215,8 +216,9 @@ runs:
 
         if [[ "$TESSERA_VERSION" == workspace ]]; then
           export CARGO_TARGET_DIR="$TARGET_DIRECTORY"
-          executable=$(cargo build --package cargo-tessera --locked --profile "$TESSERA_PROFILE" --message-format=json-render-diagnostics |
-            jq -r 'select(.reason == "compiler-artifact" and .target.name == "cargo-tessera" and .executable != null) | .executable')
+          build_log="$RUNNER_TEMP/setup-tessera-build.jsonl"
+          cargo build --verbose --package cargo-tessera --locked --profile "$TESSERA_PROFILE" --message-format=json-render-diagnostics > "$build_log"
+          executable=$(jq -r 'select(.reason == "compiler-artifact" and .target.name == "cargo-tessera" and .executable != null) | .executable' "$build_log")
           cp "$executable" "$tool_bin"
         elif [[ -x "$tool_bin" ]]; then
           echo "Using cached cargo-tessera ($TESSERA_VERSION)."
