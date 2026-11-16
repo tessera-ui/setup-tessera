@@ -35,7 +35,7 @@ test(`Cargo freshness survives checkout (explicit directory watch: ${watchDirect
       .find(message => message.reason === 'compiler-artifact' && message.target.name === 'cache-fixture');
     assert.equal(build().fresh, false);
 
-    const originalMtime = fs.statSync(source).mtimeMs;
+    const originalMtimeNs = fs.statSync(source, { bigint: true }).mtimeNs;
 
     // Reproduce checkout on a new runner without changing source bytes.
     const newer = new Date(Date.now() + 2000);
@@ -43,7 +43,7 @@ test(`Cargo freshness survives checkout (explicit directory watch: ${watchDirect
       fs.utimesSync(path.join(root, file), newer, newer);
     }
     restoreSourceMtimes(root, 'target');
-    assert.ok(Math.abs(fs.statSync(source).mtimeMs - originalMtime) < 1);
+    assert.equal(fs.statSync(source, { bigint: true }).mtimeNs, originalMtimeNs);
     const freshBuild = run('cargo', ['build', '--offline', '--message-format=json']);
     assert.ok(freshBuild.trim().split('\n').map(line => JSON.parse(line))
       .filter(message => message.reason === 'compiler-artifact').every(message => message.fresh));
