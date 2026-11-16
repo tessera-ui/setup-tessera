@@ -79,26 +79,6 @@ cache namespace.
 Use `cache-key` when two jobs use incompatible build configurations, such as
 different feature sets or profiles.
 
-## Caching
-
-Build caches are separated by job, runner, Rust compiler, build environment, and
-platform targets. Compatible dependency artifacts can be restored across source
-revisions. For Git checkouts, unchanged files recover their cached timestamps
-only after their SHA-256 hashes match, so checkout mtimes do not force rebuilds.
-Directory signatures also cover watched templates. Changed files and directory
-entries keep their new timestamps and are rebuilt by Cargo. A post-job step
-snapshots the final inputs before the build cache is saved, including any source
-changes made by workflow steps.
-
-Timestamp preservation uses Python 3 (preinstalled on GitHub-hosted runners) to
-retain the nanosecond precision required by Cargo's package fingerprints.
-
-Workspace setup runs `cargo build --package cargo-tessera` with `tool-profile`
-and copies the executable onto `PATH`. It keeps the workspace artifacts and does
-not modify Cargo aliases. A matching development-profile `cargo run` alias can
-therefore reuse those artifacts; changed features, profiles, or compiler inputs
-can still require compilation.
-
 ## License
 
 [MIT](LICENSE). Installed tools retain their respective licenses.
