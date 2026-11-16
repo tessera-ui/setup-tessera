@@ -1,5 +1,5 @@
 const assert = require('node:assert/strict');
-const { execFileSync } = require('node:child_process');
+const { execFileSync, spawnSync } = require('node:child_process');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
@@ -9,17 +9,20 @@ const { restoreSourceMtimes } = require('./source-mtimes.cjs');
 test('unchanged checkout reuses Cargo artifacts; changed bytes still rebuild', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'setup-tessera-cache-'));
   try {
+    const env = { ...process.env, CARGO_TARGET_DIR: path.join(root, 'target'), CARGO_TERM_COLOR: 'never' };
     const run = (command, args) => execFileSync(command, args, {
       cwd: root,
       encoding: 'utf8',
-      env: { ...process.env, CARGO_TARGET_DIR: path.join(root, 'target') },
+      env,
     });
     fs.mkdirSync(path.join(root, 'src'));
+    fs.mkdirSync(path.join(root, '.cargo'));
+    fs.writeFileSync(path.join(root, '.cargo/config.toml'), '[alias]\ntessera = "run --package cache-fixture tessera"\n');
     fs.writeFileSync(path.join(root, 'Cargo.toml'), '[package]\nname = "cache-fixture"\nversion = "0.1.0"\nedition = "2021"\n');
     const source = path.join(root, 'src/main.rs');
     fs.writeFileSync(source, 'fn main() { println!("before"); }\n');
     run('git', ['init', '--quiet']);
-    run('git', ['add', 'Cargo.toml', 'src/main.rs']);
+    run('git', ['add', 'Cargo.toml', 'src/main.rs', '.cargo/config.toml']);
     restoreSourceMtimes(root, 'target');
     const build = () => run('cargo', ['build', '--offline', '--message-format=json'])
       .trim().split('\n').map(line => JSON.parse(line))
@@ -33,6 +36,15 @@ test('unchanged checkout reuses Cargo artifacts; changed bytes still rebuild', (
     restoreSourceMtimes(root, 'target');
     assert.ok(Math.abs(fs.statSync(source).mtimeMs - originalMtime) < 1);
     assert.equal(build().fresh, true);
+    const alias = spawnSync('cargo', ['--verbose', 'tessera', '--help'], {
+      cwd: root,
+      encoding: 'utf8',
+      env,
+    });
+    assert.equal(alias.status, 0, alias.stderr);
+    assert.match(alias.stderr, /Fresh cache-fixture/);
+    assert.doesNotMatch(alias.stderr, /Compiling cache-fixture/);
+    assert.equal(alias.stdout.trim(), 'before');
 
     // Same-length edits must not inherit the cached timestamp or stale executable.
     fs.writeFileSync(source, 'fn main() { println!("after!"); }\n');
