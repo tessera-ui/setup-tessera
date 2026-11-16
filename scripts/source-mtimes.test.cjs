@@ -6,7 +6,8 @@ const path = require('node:path');
 const { test } = require('node:test');
 const { restoreSourceMtimes, saveSourceMtimes } = require('../source-mtimes/source-mtimes.cjs');
 
-test('unchanged checkout reuses Cargo artifacts; changed bytes still rebuild', () => {
+for (const watchDirectory of [false, true]) {
+test(`Cargo freshness survives checkout (explicit directory watch: ${watchDirectory})`, () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'setup-tessera-cache-'));
   try {
     const env = { ...process.env, CARGO_TARGET_DIR: path.join(root, 'target'), CARGO_TERM_COLOR: 'never' };
@@ -23,7 +24,9 @@ test('unchanged checkout reuses Cargo artifacts; changed bytes still rebuild', (
     fs.writeFileSync(source, 'fn main() { println!("before"); }\n');
     fs.mkdirSync(path.join(root, 'templates'));
     fs.writeFileSync(path.join(root, 'templates/template.txt'), 'template\n');
-    fs.writeFileSync(path.join(root, 'build.rs'), 'fn main() { println!("cargo:rerun-if-changed=templates"); }\n');
+    fs.writeFileSync(path.join(root, 'build.rs'), watchDirectory
+      ? 'fn main() { println!("cargo:rerun-if-changed=templates"); }\n'
+      : 'fn main() {}\n');
     run('git', ['init', '--quiet']);
     run('git', ['add', 'Cargo.toml', 'src/main.rs', '.cargo/config.toml', 'build.rs', 'templates']);
     restoreSourceMtimes(root, 'target');
@@ -85,3 +88,4 @@ test('unchanged checkout reuses Cargo artifacts; changed bytes still rebuild', (
     fs.rmSync(root, { recursive: true, force: true });
   }
 });
+}
