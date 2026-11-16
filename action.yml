@@ -168,14 +168,14 @@ runs:
           ~/.cargo/git
           ~/.cargo/.tessera-mobile
           ${{ inputs.target-directory }}
-        key: tessera-cargo-v2-${{ steps.resolve.outputs.cache_key }}-${{ runner.os }}-${{ runner.arch }}-${{ github.job }}-${{ steps.rust.outputs.cachekey }}-${{ steps.resolve.outputs.build_environment }}-${{ steps.resolve.outputs.platforms_key }}-${{ steps.resolve.outputs.target_key }}-${{ hashFiles('**/Cargo.lock', '**/Cargo.toml', '.cargo/config.toml', 'rust-toolchain', 'rust-toolchain.toml') }}-${{ steps.resolve.outputs.key }}-sources-v3
+        key: tessera-cargo-v2-${{ steps.resolve.outputs.cache_key }}-${{ runner.os }}-${{ runner.arch }}-${{ github.job }}-${{ steps.rust.outputs.cachekey }}-${{ steps.resolve.outputs.build_environment }}-${{ steps.resolve.outputs.platforms_key }}-${{ steps.resolve.outputs.target_key }}-${{ hashFiles('**/Cargo.lock', '**/Cargo.toml', '.cargo/config.toml', 'rust-toolchain', 'rust-toolchain.toml') }}-${{ steps.resolve.outputs.key }}-sources-v4
         restore-keys: |
           tessera-cargo-v2-${{ steps.resolve.outputs.cache_key }}-${{ runner.os }}-${{ runner.arch }}-${{ github.job }}-${{ steps.rust.outputs.cachekey }}-${{ steps.resolve.outputs.build_environment }}-${{ steps.resolve.outputs.platforms_key }}-${{ steps.resolve.outputs.target_key }}-${{ hashFiles('**/Cargo.lock', '**/Cargo.toml', '.cargo/config.toml', 'rust-toolchain', 'rust-toolchain.toml') }}-
           tessera-cargo-v2-${{ steps.resolve.outputs.cache_key }}-${{ runner.os }}-${{ runner.arch }}-${{ github.job }}-${{ steps.rust.outputs.cachekey }}-${{ steps.resolve.outputs.build_environment }}-${{ steps.resolve.outputs.platforms_key }}-${{ steps.resolve.outputs.target_key }}-
 
     - name: Restore unchanged source timestamps
       if: inputs.cache == 'true'
-      uses: tessera-ui/setup-tessera/source-mtimes@ba7f877cafe6c83dec86c2b9fb1d859f25a2df06
+      uses: tessera-ui/setup-tessera/source-mtimes@cb1493390724cb8465d61b68219a594c53d1958d
       with:
         target-directory: ${{ inputs.target-directory }}
 

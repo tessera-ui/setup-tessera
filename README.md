@@ -90,6 +90,9 @@ entries keep their new timestamps and are rebuilt by Cargo. A post-job step
 snapshots the final inputs before the build cache is saved, including any source
 changes made by workflow steps.
 
+Timestamp preservation uses Python 3 (preinstalled on GitHub-hosted runners) to
+retain the nanosecond precision required by Cargo's package fingerprints.
+
 Workspace setup runs `cargo build --package cargo-tessera` with `tool-profile`
 and copies the executable onto `PATH`. It keeps the workspace artifacts and does
 not modify Cargo aliases. A matching development-profile `cargo run` alias can
