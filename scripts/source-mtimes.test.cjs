@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { test } = require('node:test');
-const { restoreSourceMtimes } = require('./source-mtimes.cjs');
+const { restoreSourceMtimes, saveSourceMtimes } = require('../source-mtimes/source-mtimes.cjs');
 
 test('unchanged checkout reuses Cargo artifacts; changed bytes still rebuild', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'setup-tessera-cache-'));
@@ -66,6 +66,15 @@ test('unchanged checkout reuses Cargo artifacts; changed bytes still rebuild', (
     restoreSourceMtimes(root, 'target');
     assert.equal(build().fresh, false);
     assert.equal(run(path.join(root, 'target/debug/cache-fixture' + (process.platform === 'win32' ? '.exe' : '')), []).trim(), 'after!');
+
+    // Snapshot after workflow builds: the next checkout must not mistake edited artifacts for original ones.
+    saveSourceMtimes(root, 'target');
+    fs.writeFileSync(source, 'fn main() { println!("before"); }\n');
+    const nextCheckout = new Date(newer.getTime() + 2000);
+    fs.utimesSync(source, nextCheckout, nextCheckout);
+    restoreSourceMtimes(root, 'target');
+    assert.equal(build().fresh, false);
+    assert.equal(run(path.join(root, 'target/debug/cache-fixture' + (process.platform === 'win32' ? '.exe' : '')), []).trim(), 'before');
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }

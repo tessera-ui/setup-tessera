@@ -1,0 +1,10 @@
+name: Preserve Cargo source timestamps
+description: Restore unchanged source timestamps and snapshot final inputs before cache save.
+inputs:
+  target-directory:
+    description: Cached Cargo target directory.
+    required: true
+runs:
+  using: node24
+  main: index.cjs
+  post: post.cjs
