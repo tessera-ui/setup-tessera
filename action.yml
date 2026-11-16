@@ -168,20 +168,16 @@ runs:
           ~/.cargo/git
           ~/.cargo/.tessera-mobile
           ${{ inputs.target-directory }}
-        key: tessera-cargo-v2-${{ steps.resolve.outputs.cache_key }}-${{ runner.os }}-${{ runner.arch }}-${{ github.job }}-${{ steps.rust.outputs.cachekey }}-${{ steps.resolve.outputs.build_environment }}-${{ steps.resolve.outputs.platforms_key }}-${{ steps.resolve.outputs.target_key }}-${{ hashFiles('**/Cargo.lock', '**/Cargo.toml', '.cargo/config.toml', 'rust-toolchain', 'rust-toolchain.toml') }}-${{ steps.resolve.outputs.key }}-sources-v2
+        key: tessera-cargo-v2-${{ steps.resolve.outputs.cache_key }}-${{ runner.os }}-${{ runner.arch }}-${{ github.job }}-${{ steps.rust.outputs.cachekey }}-${{ steps.resolve.outputs.build_environment }}-${{ steps.resolve.outputs.platforms_key }}-${{ steps.resolve.outputs.target_key }}-${{ hashFiles('**/Cargo.lock', '**/Cargo.toml', '.cargo/config.toml', 'rust-toolchain', 'rust-toolchain.toml') }}-${{ steps.resolve.outputs.key }}-sources-v3
         restore-keys: |
           tessera-cargo-v2-${{ steps.resolve.outputs.cache_key }}-${{ runner.os }}-${{ runner.arch }}-${{ github.job }}-${{ steps.rust.outputs.cachekey }}-${{ steps.resolve.outputs.build_environment }}-${{ steps.resolve.outputs.platforms_key }}-${{ steps.resolve.outputs.target_key }}-${{ hashFiles('**/Cargo.lock', '**/Cargo.toml', '.cargo/config.toml', 'rust-toolchain', 'rust-toolchain.toml') }}-
           tessera-cargo-v2-${{ steps.resolve.outputs.cache_key }}-${{ runner.os }}-${{ runner.arch }}-${{ github.job }}-${{ steps.rust.outputs.cachekey }}-${{ steps.resolve.outputs.build_environment }}-${{ steps.resolve.outputs.platforms_key }}-${{ steps.resolve.outputs.target_key }}-
 
     - name: Restore unchanged source timestamps
       if: inputs.cache == 'true'
-      shell: bash
-      env:
-        TARGET_DIRECTORY: ${{ inputs.target-directory }}
-      run: |
-        if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-          node "$GITHUB_ACTION_PATH/scripts/source-mtimes.cjs" "$TARGET_DIRECTORY"
-        fi
+      uses: tessera-ui/setup-tessera/source-mtimes@e6a431ede64ec03a6f26600864bc96f1b6ff6161
+      with:
+        target-directory: ${{ inputs.target-directory }}
 
     - name: Restore Tessera tools
       if: inputs.cache == 'true'

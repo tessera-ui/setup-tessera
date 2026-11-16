@@ -85,7 +85,10 @@ Build caches are separated by job, runner, Rust compiler, build environment, and
 platform targets. Compatible dependency artifacts can be restored across source
 revisions. For Git checkouts, unchanged files recover their cached timestamps
 only after their SHA-256 hashes match, so checkout mtimes do not force rebuilds.
-Changed files keep their new timestamps and are rebuilt by Cargo.
+Directory signatures also cover watched templates. Changed files and directory
+entries keep their new timestamps and are rebuilt by Cargo. A post-job step
+snapshots the final inputs before the build cache is saved, including any source
+changes made by workflow steps.
 
 Workspace setup runs `cargo build --package cargo-tessera` with `tool-profile`
 and copies the executable onto `PATH`. It keeps the workspace artifacts and does
