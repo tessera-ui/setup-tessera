@@ -4,7 +4,7 @@ Set up Rust, Tessera, and platform toolchains.
 
 ```yaml
 - uses: actions/checkout@v4
-- uses: tessera-ui/setup-tessera@v1.0.0
+- uses: tessera-ui/setup-tessera@v1.0.1
 ```
 
 Defaults to stable Rust, host and Web support, with caching enabled.
