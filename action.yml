@@ -175,7 +175,7 @@ runs:
 
     - name: Restore unchanged source timestamps
       if: inputs.cache == 'true'
-      uses: tessera-ui/setup-tessera/source-mtimes@e6a431ede64ec03a6f26600864bc96f1b6ff6161
+      uses: tessera-ui/setup-tessera/source-mtimes@ba7f877cafe6c83dec86c2b9fb1d859f25a2df06
       with:
         target-directory: ${{ inputs.target-directory }}
 
